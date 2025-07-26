@@ -37,7 +37,7 @@
             z-index: 10;
             backdrop-filter: blur(5px);
             text-align: center;
-            transition: opacity 0.15s ease, visibility 0.15s;
+            transition: opacity 0.1s ease, visibility 0.05s;
             overflow-y: auto;
             padding: 2rem;
             box-sizing: border-box;
@@ -317,14 +317,9 @@
         const euler = new THREE.Euler(0, 0, 0, 'YXZ');
         let reactionTimes = [], lastHitTime = 0;
         let gameOverInputReady = false;
-
-        // --- [FIX] 請求指針鎖定的輔助函式 ---
-        const requestPointerLock = () => {
-            canvas.requestPointerLock().catch(err => {
-                // 這不是一個錯誤。它只是意味著使用者按下了 ESC 鍵或以其他方式取消了請求。
-                console.log("指針鎖定請求被使用者取消，此為正常操作。");
-            });
-        };
+        let gameOverTimeout;
+        // [新增] 用於防止指標鎖定請求衝突的旗標
+        let canRequestLock = true;
 
         function init() {
             scene = new THREE.Scene();
@@ -437,6 +432,7 @@
             score = 0; timeLeft = 60; totalShots = 0; hits = 0;
             reactionTimes = [];
             lastHitTime = Date.now();
+            clearTimeout(gameOverTimeout);
             gameOverInputReady = false;
             
             showScreen('game');
@@ -462,16 +458,18 @@
             showScreen('pause');
         }
 
+        function resumeGame() {
+            if (canRequestLock) {
+                canvas.requestPointerLock();
+            }
+        }
+
         function endGame() {
             if (!gameActive) return;
             gameActive = false;
             gameOverInputReady = false;
             clearInterval(timerInterval);
-            
-            // [FIX] 只有在指針鎖定時才退出
-            if (document.pointerLockElement) {
-                document.exitPointerLock();
-            }
+            document.exitPointerLock();
             
             showScreen('gameOver');
             
@@ -489,22 +487,19 @@
 
             saveScore(score, accuracyString, avgReactionTime);
 
-            setTimeout(() => {
+            clearTimeout(gameOverTimeout);
+            gameOverTimeout = setTimeout(() => {
                 gameOverInputReady = true;
-            }, 600);
+            }, 1000);
         }
         
         function returnToMenu() {
             gameActive = false;
             isPointerLocked = false;
+            clearTimeout(gameOverTimeout);
             gameOverInputReady = false;
             clearInterval(timerInterval);
-
-            // [FIX] 只有在指針鎖定時才退出
-            if (document.pointerLockElement) {
-                document.exitPointerLock();
-            }
-
+            if (document.pointerLockElement) document.exitPointerLock();
             targets.forEach(target => scene.remove(target));
             targets = [];
             showScreen('start');
@@ -520,23 +515,24 @@
             camera.quaternion.setFromEuler(euler);
         }
         
-        // [FIX] 簡化後的指針鎖定變更處理函式
+        // [修改] 引入冷卻機制來處理指標鎖定
         function handlePointerLockChange() {
             if (document.pointerLockElement === canvas) {
-                // 指針已成功鎖定
                 isPointerLocked = true;
                 if (!gameActive) {
-                    // 如果遊戲尚未開始，則啟動新遊戲
                     startGame();
                 } else {
-                    // 如果遊戲已在進行（表示是從暫停狀態恢復），則顯示遊戲畫面並重新開始計時
                     showScreen('game');
-                    startTimer(); 
+                    startTimer();
                 }
             } else {
-                // 指針已解鎖
                 isPointerLocked = false;
-                // 如果遊戲在解鎖時是活動狀態（表示是使用者按 ESC 暫停），則暫停遊戲
+                // 當失去鎖定時，啟動一個短暫的冷卻，防止立即重新鎖定導致錯誤
+                canRequestLock = false;
+                setTimeout(() => {
+                    canRequestLock = true;
+                }, 100);
+
                 if (gameActive) {
                     pauseGame();
                 }
@@ -614,7 +610,7 @@
                 } else {
                     scores.forEach(s => {
                         const li = document.createElement('li');
-                        if (newHighScore && s.date === newHighScore.date && s.score === newHighScore.score) {
+                        if (newHighScore && s.date === newEntry.date && s.score === newEntry.score) {
                             li.classList.add('new-highscore');
                         }
                         li.innerHTML = `
@@ -634,17 +630,20 @@
         }
 
         function setupEventListeners() {
-            // 所有啟動/恢復遊戲的按鈕都只呼叫 requestPointerLock
-            startButton.addEventListener('click', requestPointerLock);
-            playAgainButton.addEventListener('click', () => {
-                if (gameOverInputReady) {
-                    requestPointerLock();
+            // [修改] 所有請求鎖定的地方都檢查 canRequestLock 旗標
+            startButton.addEventListener('click', () => {
+                if (canRequestLock) {
+                    canvas.requestPointerLock();
                 }
             });
-            resumeButton.addEventListener('click', requestPointerLock);
-            
+            playAgainButton.addEventListener('click', () => {
+                if (gameOverInputReady && canRequestLock) {
+                    canvas.requestPointerLock();
+                }
+            });
             backToMenuButton.addEventListener('click', returnToMenu);
             menuButton.addEventListener('click', returnToMenu);
+            resumeButton.addEventListener('click', resumeGame);
             
             const clearButtons = document.querySelectorAll('.clear-scores-btn');
             clearButtons.forEach(button => {
@@ -681,10 +680,14 @@
                     if (screens.start.classList.contains('hidden') === false) {
                         const activeEl = document.activeElement;
                         if (activeEl && activeEl.isContentEditable) return; 
-                        requestPointerLock();
+                        if (canRequestLock) {
+                            canvas.requestPointerLock();
+                        }
                     } 
                     else if (screens.gameOver.classList.contains('hidden') === false && gameOverInputReady) {
-                        requestPointerLock();
+                        if (canRequestLock) {
+                            canvas.requestPointerLock();
+                        }
                     }
                 }
             });
