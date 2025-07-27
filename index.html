@@ -318,7 +318,6 @@
         let reactionTimes = [], lastHitTime = 0;
         let gameOverInputReady = false;
         let gameOverTimeout;
-        // [新增] 用於防止指標鎖定請求衝突的旗標
         let canRequestLock = true;
 
         function init() {
@@ -515,7 +514,6 @@
             camera.quaternion.setFromEuler(euler);
         }
         
-        // [修改] 引入冷卻機制來處理指標鎖定
         function handlePointerLockChange() {
             if (document.pointerLockElement === canvas) {
                 isPointerLocked = true;
@@ -527,7 +525,6 @@
                 }
             } else {
                 isPointerLocked = false;
-                // 當失去鎖定時，啟動一個短暫的冷卻，防止立即重新鎖定導致錯誤
                 canRequestLock = false;
                 setTimeout(() => {
                     canRequestLock = true;
@@ -610,7 +607,8 @@
                 } else {
                     scores.forEach(s => {
                         const li = document.createElement('li');
-                        if (newHighScore && s.date === newEntry.date && s.score === newEntry.score) {
+                        // [修正] 使用正確的變數 newHighScore 來比較，而不是 newEntry
+                        if (newHighScore && s.date === newHighScore.date && s.score === newHighScore.score) {
                             li.classList.add('new-highscore');
                         }
                         li.innerHTML = `
@@ -630,7 +628,6 @@
         }
 
         function setupEventListeners() {
-            // [修改] 所有請求鎖定的地方都檢查 canRequestLock 旗標
             startButton.addEventListener('click', () => {
                 if (canRequestLock) {
                     canvas.requestPointerLock();
