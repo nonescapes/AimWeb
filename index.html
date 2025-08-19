@@ -3,730 +3,189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AimWeb - 專業訓練模式</title>
+    <!-- 3 秒後自動重新導向到新網址 -->
+    <meta http-equiv="refresh" content="3;url=https://nonescapes.com/game/aimweb">
+    <title>AimWeb 已遷移至新網域</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8FY9GYVMG5"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-8FY9GYVMG5');
+    </script>
+
     <style>
-        /* 基本樣式重置 */
+        /* 頁面基本樣式 */
         body {
-            margin: 0;
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: #111;
-            color: white;
-        }
-
-        /* 遊戲畫布 */
-        #game-canvas {
-            display: block;
-            width: 100vw;
+            background-color: #000000;
+            color: #ffffff;
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             height: 100vh;
-            cursor: crosshair;
+            margin: 0;
+            text-align: center;
+            overflow: hidden;
+            position: relative;
         }
 
-        /* UI 疊層容器 */
-        .ui-overlay {
+        /* 內容容器 */
+        .content {
+            z-index: 2;
+            padding: 2rem;
+        }
+
+        /* 主標題樣式 */
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.3); /* 白色光暈效果 */
+            color: #ffffff; /* 白色文字 */
+        }
+
+        /* 說明文字樣式 */
+        p {
+            font-size: 1.25rem;
+            color: #cccccc;
+            max-width: 600px;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        /* 重新導向資訊區塊 */
+        .redirect-info {
+            margin-top: 2rem;
+            font-size: 1rem;
+            color: #aaaaaa;
+        }
+
+        /* 倒數計時數字 */
+        .redirect-info #countdown {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ffffff;
+            margin: 0 0.5rem;
+        }
+
+        /* 手動連結樣式 */
+        .redirect-info a {
+            color: #ffffff;
+            text-decoration: none;
+            border-bottom: 1px solid #ffffff;
+            transition: color 0.3s, border-bottom-color 0.3s;
+        }
+        
+        .redirect-info a:hover {
+            color: #cccccc;
+            border-bottom-color: #cccccc;
+        }
+
+        /* 動態背景容器 */
+        .background-animation {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background-color: rgba(0, 0, 0, 0.85);
-            z-index: 10;
-            backdrop-filter: blur(5px);
-            text-align: center;
-            transition: opacity 0.1s ease, visibility 0.05s;
-            overflow-y: auto;
-            padding: 2rem;
-            box-sizing: border-box;
-        }
-        
-        /* 用於隱藏 UI 的通用類別 */
-        .hidden {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none; /* 確保隱藏時無法互動 */
+            z-index: 1;
+            overflow: hidden;
         }
 
-        .ui-overlay h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            text-shadow: 0 0 10px #0ff, 0 0 20px #0ff;
+        /* 背景粒子 */
+        .dot {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: move 20s linear infinite;
         }
 
-        .ui-overlay p {
-            font-size: 1.2rem;
-            max-width: 500px;
-            line-height: 1.6;
-            margin-bottom: 1rem;
+        /* 粒子移動動畫 */
+        @keyframes move {
+            0% {
+                transform: translateY(0) translateX(0);
+            }
+            100% {
+                transform: translateY(-120vh) translateX(calc(var(--x-end) * 1px));
+            }
         }
-        
-        /* 設定容器樣式 */
-        .settings-container {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-top: 1rem;
-            width: 100%;
-            max-width: 500px;
-            box-sizing: border-box;
-        }
-        
-        .settings-container .slider-group {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .settings-container label {
-            font-size: 1.1rem;
-            margin-right: 1rem;
-        }
-
-        .settings-container input[type="range"] {
-            width: 200px;
-            vertical-align: middle;
-        }
-        
-        #sensitivity-conversions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.5rem;
-            font-size: 0.9rem;
-            text-align: left;
-            margin: 0 auto;
-            max-width: 400px;
-        }
-        
-        #sensitivity-conversions p { margin: 0; padding: 0.2rem; font-size: 0.9rem; color: #ccc; display: flex; justify-content: space-between; align-items: center; }
-        #sensitivity-conversions span { font-weight: bold; color: #fff; padding: 2px 4px; border-radius: 3px; cursor: text; }
-        #sensitivity-conversions span:focus { outline: 2px solid #0af; background: rgba(0,0,0,0.3); box-shadow: 0 0 10px #0af; }
-
-        /* --- 按鈕樣式 --- */
-        .btn-primary {
-            cursor: pointer;
-            transition: all 0.2s ease;
-            width: 250px;
-            padding: 1rem 2rem;
-            margin-top: 1rem;
-            font-size: 1.2rem;
-            color: white;
-            background: #08f;
-            border: 1px solid #0af;
-            border-radius: 8px;
-            box-shadow: 0 0 15px rgba(0, 136, 255, 0.5);
-        }
-
-        .btn-primary:hover {
-            background: #0af;
-            transform: scale(1.05);
-            box-shadow: 0 0 25px rgba(0, 170, 255, 1);
-        }
-        
-        #start-button { font-size: 1.5rem; margin-top: 2rem; }
-
-        .clear-scores-btn {
-            background: rgba(0, 0, 0, 0.4); color: #ccc; border: 1px solid #555; border-radius: 20px;
-            padding: 0.2rem 0.8rem; font-size: 0.8rem; margin-left: 1rem; width: auto; margin-top: 0;
-            box-shadow: none; transition: background 0.2s, color 0.2s, border-color 0.2s;
-        }
-        .clear-scores-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; border-color: #888; }
-
-        /* 版面配置 */
-        .content-wrapper {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            max-width: 1300px;
-            gap: 5rem;
-        }
-
-        .main-panel {
-            width: 500px;
-            flex-shrink: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .result-stat { font-size: 1.5rem; margin: 0.5rem 0 !important; max-width: none !important; }
-
-        .leaderboard { flex: 1; max-width: 400px; margin-top: 0; text-align: left; }
-        .leaderboard-placeholder { flex: 1; max-width: 400px; visibility: hidden; }
-        
-        .leaderboard-header { display: flex; justify-content: space-between; align-items: center; padding-left: 1rem; }
-        .leaderboard h2 { color: white; text-align: left; margin: 1rem 0; }
-        
-        .leaderboard ol { list-style: none; padding: 0; color: #ddd; }
-        .leaderboard li { background: rgba(0,0,0,0.2); padding: 0.75rem 1rem; margin-bottom: 0.5rem; border-radius: 5px; display: flex; justify-content: space-between; align-items: flex-start; transition: all 0.3s ease; }
-        .leaderboard li.new-highscore { background: rgba(255, 255, 255, 0.1); }
-        .leaderboard .score { font-weight: bold; color: white; font-size: 1.8rem; white-space: nowrap; margin-top: -0.5rem; }
-        .leaderboard .details { display: flex; flex-direction: column; align-items: flex-end; }
-        .leaderboard .date { color: #999; font-size: 0.8rem; margin-bottom: 1.0rem; }
-        .leaderboard .stats { font-size: 0.7rem; color: #ccc; display: flex; gap: 0.75rem; justify-content: flex-end; align-items: center; }
-        .leaderboard .stats span { white-space: nowrap; }
-
-        /* 遊戲中的 HUD (抬頭顯示器) */
-        #hud {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            background: transparent;
-            backdrop-filter: none;
-            z-index: 5;
-        }
-        #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 4px; height: 4px;
-            background-color: rgba(0, 255, 255, 0.8); border-radius: 50%;
-            transform: translate(-50%, -50%); box-shadow: 0 0 5px #0ff;
-        }
-        #score, #timer {
-            position: absolute; font-size: 2rem; padding: 20px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-        }
-        #score { top: 0; left: 0; }
-        #timer { top: 0; right: 0; }
     </style>
 </head>
 <body>
-    <!-- 遊戲畫布 -->
-    <canvas id="game-canvas"></canvas>
 
-    <!-- 遊戲中的 HUD -->
-    <div id="hud" class="hidden">
-        <div id="crosshair"></div>
-        <div id="score">分數: 0</div>
-        <div id="timer">時間: 60</div>
-    </div>
+    <!-- 背景動畫容器 -->
+    <div class="background-animation" id="background-animation"></div>
 
-    <!-- 開始畫面 -->
-    <div id="start-screen" class="ui-overlay">
-        <div class="content-wrapper">
-            <div class="leaderboard">
-                <div class="leaderboard-header">
-                    <h2>最高分數</h2>
-                    <button class="clear-scores-btn">清除</button>
-                </div>
-                <ol id="highscore-list-main"></ol>
-            </div>
-            <div class="main-panel">
-                <h1>AimWeb</h1>
-                <p>一個基於瀏覽器的第一人稱射擊訓練模擬器。<br>在下方調整靈敏度，然後開始訓練。</p>
-                <div class="settings-container">
-                    <div class="slider-group">
-                        <label for="sensitivity-slider">靈敏度:</label>
-                        <input type="range" id="sensitivity-slider" min="1" max="100" value="10">
-                    </div>
-                    <div id="sensitivity-conversions">
-                        <p><label>Valorant:</label> <span id="val-sens" contenteditable="true" data-game="val">1.000</span></p>
-                        <p><label>CS2:</label> <span id="cs2-sens" contenteditable="true" data-game="cs2">3.182</span></p>
-                        <p><label>Apex Legends:</label> <span id="apex-sens" contenteditable="true" data-game="apex">3.182</span></p>
-                        <p><label>Overwatch 2:</label> <span id="ow-sens" contenteditable="true" data-game="ow">10.606</span></p>
-                        <p><label>Rainbow 6:</label> <span id="r6-sens" contenteditable="true" data-game="r6">12.216</span></p>
-                        <p><label>PUBG:</label> <span id="pubg-sens" contenteditable="true" data-game="pubg">57.309</span></p>
-                    </div>
-                </div>
-                <button id="start-button" class="btn-primary">開始訓練</button>
-            </div>
-            <div class="leaderboard-placeholder"></div>
+    <!-- 主要內容 -->
+    <div class="content">
+        <h1>我們搬家了！</h1>
+        <p>
+            感謝您的支持！舊版的 AimWeb 已功成身退。<br>
+            為了提供更好的遊戲體驗，我們已將網站遷移至全新的網域。
+        </p>
+        <div class="redirect-info">
+            <p>
+                <span id="countdown">3</span> 秒後將自動跳轉...
+            </p>
+            <p>
+                如果頁面沒有自動跳轉，請 
+                <a href="https://nonescapes.com/game/aimweb">點擊這裡</a>
+                手動前往。
+            </p>
         </div>
     </div>
 
-    <!-- 暫停畫面 -->
-    <div id="pause-screen" class="ui-overlay hidden">
-        <h1>遊戲暫停</h1>
-        <button id="resume-button" class="btn-primary">繼續遊戲</button>
-        <button id="menu-button" class="btn-primary">回到主選單</button>
-    </div>
+    <script>
+        // 動態背景效果
+        const container = document.getElementById('background-animation');
+        const numDots = 50; // 粒子數量
 
-    <!-- 遊戲結束畫面 -->
-    <div id="game-over-screen" class="ui-overlay hidden">
-        <div class="content-wrapper">
-            <div class="leaderboard">
-                <div class="leaderboard-header">
-                    <h2>最高分數</h2>
-                    <button class="clear-scores-btn">清除</button>
-                </div>
-                <ol id="highscore-list-gameover"></ol>
-            </div>
-            <div class="main-panel">
-                <h1>訓練結束</h1>
-                <p id="final-score" class="result-stat">你的最終分數是：0</p>
-                <p class="result-stat">平均擊殺時間: <span id="avg-reaction-time">0</span></p>
-                <p class="result-stat">準確率: <span id="final-accuracy">0.00</span></p>
-                <button id="play-again-button" class="btn-primary">再來一把</button>
-                <button id="back-to-menu-button" class="btn-primary">回到主畫面</button>
-            </div>
-            <div class="leaderboard-placeholder"></div>
-        </div>
-    </div>
-
-    <!-- 引入 Three.js -->
-    <script type="importmap"> { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js" } } </script>
-
-    <!-- 遊戲主邏輯 -->
-    <script type="module">
-        import * as THREE from 'three';
-
-        // --- DOM 元素獲取 ---
-        const canvas = document.getElementById('game-canvas');
-        
-        const screens = {
-            start: document.getElementById('start-screen'),
-            game: document.getElementById('hud'),
-            pause: document.getElementById('pause-screen'),
-            gameOver: document.getElementById('game-over-screen')
-        };
-        
-        const startButton = document.getElementById('start-button');
-        const playAgainButton = document.getElementById('play-again-button');
-        const backToMenuButton = document.getElementById('back-to-menu-button');
-        const resumeButton = document.getElementById('resume-button');
-        const menuButton = document.getElementById('menu-button');
-
-        const scoreEl = document.getElementById('score');
-        const timerEl = document.getElementById('timer');
-        const finalScoreEl = document.getElementById('final-score');
-        const finalAccuracyEl = document.getElementById('final-accuracy');
-        const avgReactionTimeEl = document.getElementById('avg-reaction-time');
-        
-        const sensitivitySlider = document.getElementById('sensitivity-slider');
-        const sensConversionSpans = {
-            val: document.getElementById('val-sens'), cs2: document.getElementById('cs2-sens'),
-            apex: document.getElementById('apex-sens'), ow: document.getElementById('ow-sens'),
-            r6: document.getElementById('r6-sens'), pubg: document.getElementById('pubg-sens'),
-        };
-
-        const highscoreListMain = document.getElementById('highscore-list-main');
-        const highscoreListGameOver = document.getElementById('highscore-list-gameover');
-
-        const CONVERSION_RATES = { val: 1.000, cs2: 3.182, apex: 3.182, ow: 10.606, r6: 12.216, pubg: 57.308573 };
-
-        let scene, camera, renderer, raycaster;
-
-        // --- 遊戲狀態與控制變數 ---
-        let targets = [], score = 0, timeLeft = 60, totalShots = 0, hits = 0;
-        let gameActive = false, isPointerLocked = false;
-        let timerInterval;
-        let sensitivity = 1.0;
-        const roomSize = { width: 50, height: 20, depth: 40 };
-        const euler = new THREE.Euler(0, 0, 0, 'YXZ');
-        let reactionTimes = [], lastHitTime = 0;
-        let gameOverInputReady = false;
-        let gameOverTimeout;
-        let canRequestLock = true;
-
-        function init() {
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x1a1a1a);
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 4, roomSize.depth / 2 - 20);
-            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.shadowMap.enabled = true;
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-            scene.add(ambientLight);
-            const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
-            hemisphereLight.position.set(0, roomSize.height, 0);
-            scene.add(hemisphereLight);
-            raycaster = new THREE.Raycaster();
-            createEnvironment();
-            setupEventListeners();
-            loadSettings(); 
-            loadAndDisplayHighScores(); 
-            animate();
-        }
-        
-        function showScreen(screenName) {
-            for (const key in screens) {
-                screens[key].classList.add('hidden');
-            }
-            if (screens[screenName]) {
-                screens[screenName].classList.remove('hidden');
-            }
-        }
-
-        function createEnvironment() {
-            const createGridTexture = (size = 512, divisions = 10) => {
-                const canvas = document.createElement('canvas'); canvas.width = size; canvas.height = size;
-                const context = canvas.getContext('2d');
-                context.fillStyle = '#444444'; context.fillRect(0, 0, size, size);
-                context.strokeStyle = '#555555'; context.lineWidth = 2;
-                const step = size / divisions;
-                for (let i = 0; i <= divisions; i++) {
-                    const pos = i * step;
-                    context.beginPath(); context.moveTo(pos, 0); context.lineTo(pos, size); context.stroke();
-                    context.beginPath(); context.moveTo(0, pos); context.lineTo(size, pos); context.stroke();
-                }
-                const texture = new THREE.CanvasTexture(canvas);
-                texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
-                return texture;
-            };
-            const gridTexture = createGridTexture();
-            const wallMaterial = new THREE.MeshStandardMaterial({ map: gridTexture });
-            const floor = new THREE.Mesh(new THREE.PlaneGeometry(roomSize.width, roomSize.depth), wallMaterial);
-            floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true;
-            floor.material.map.repeat.set(roomSize.width / 5, roomSize.depth / 5);
-            scene.add(floor);
-            const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(roomSize.width, roomSize.depth), new THREE.MeshStandardMaterial({color: 0x333333}));
-            ceiling.rotation.x = Math.PI / 2; ceiling.position.y = roomSize.height;
-            scene.add(ceiling);
-            const wallGeo = new THREE.PlaneGeometry(roomSize.width, roomSize.height);
-            const sideWallGeo = new THREE.PlaneGeometry(roomSize.depth, roomSize.height);
-            const createWall = (geo, pos, rot, repeat) => {
-                const wall = new THREE.Mesh(geo, wallMaterial.clone());
-                wall.position.set(...pos); wall.rotation.set(...rot);
-                wall.material.map.repeat.set(...repeat);
-                scene.add(wall);
-            };
-            createWall(wallGeo, [0, roomSize.height / 2, -roomSize.depth / 2], [0, 0, 0], [roomSize.width / 5, roomSize.height / 5]);
-            createWall(wallGeo, [0, roomSize.height / 2, roomSize.depth / 2], [0, Math.PI, 0], [roomSize.width / 5, roomSize.height / 5]);
-            createWall(sideWallGeo, [-roomSize.width / 2, roomSize.height / 2, 0], [0, Math.PI / 2, 0], [roomSize.depth / 5, roomSize.height / 5]);
-            createWall(sideWallGeo, [roomSize.width / 2, roomSize.height / 2, 0], [0, -Math.PI / 2, 0], [roomSize.depth / 5, roomSize.height / 5]);
-        }
-
-        function createTarget(lastHitPosition = null) {
-			const targetRadius = 1;
-            const geometry = new THREE.SphereGeometry(targetRadius, 32, 16);
-            const material = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x005555 });
-            const newTarget = new THREE.Mesh(geometry, material);
-            newTarget.castShadow = true;
-            const minRequiredDistance = targetRadius * 4;
-            const spawnAreaWidth = 12; 
-            const spawnAreaHeight = 11; 
-            const verticalPadding = 1.1;
-            let positionFound = false;
-            let attempts = 0;
-            while (!positionFound && attempts < 50) {
-                attempts++;
-                const x = (Math.random() - 0.5) * spawnAreaWidth;
-                const y = Math.random() * spawnAreaHeight + verticalPadding;
-                const z = -roomSize.depth / 2 + targetRadius;
-                newTarget.position.set(x, y, z);
-                let isInvalidPosition = false;
-                for (const existingTarget of targets) {
-                    if (newTarget.position.distanceTo(existingTarget.position) < minRequiredDistance) {
-                        isInvalidPosition = true;
-                        break;
-                    }
-                }
-                if (isInvalidPosition) continue; 
-                if (lastHitPosition && newTarget.position.distanceTo(lastHitPosition) < minRequiredDistance) {
-                    isInvalidPosition = true;
-                }
-                if (!isInvalidPosition) positionFound = true;
-            }
-            scene.add(newTarget);
-            targets.push(newTarget);
-        }
-
-        function startGame() {
-            targets.forEach(target => scene.remove(target));
-            targets = [];
-            score = 0; timeLeft = 60; totalShots = 0; hits = 0;
-            reactionTimes = [];
-            lastHitTime = Date.now();
-            clearTimeout(gameOverTimeout);
-            gameOverInputReady = false;
+        for (let i = 0; i < numDots; i++) {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
             
-            showScreen('game');
-            gameActive = true;
-
-            for (let i = 0; i < 3; i++) createTarget(); 
-            updateScore(); updateTimer();
-            startTimer();
-        }
-
-        function startTimer() {
-            clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                updateTimer();
-                if (timeLeft <= 0) endGame();
-            }, 1000);
-        }
-
-        function pauseGame() {
-            if (!gameActive) return;
-            clearInterval(timerInterval);
-            showScreen('pause');
-        }
-
-        function resumeGame() {
-            if (canRequestLock) {
-                canvas.requestPointerLock();
-            }
-        }
-
-        function endGame() {
-            if (!gameActive) return;
-            gameActive = false;
-            gameOverInputReady = false;
-            clearInterval(timerInterval);
-            document.exitPointerLock();
+            const size = Math.random() * 5 + 1; // 粒子大小
+            dot.style.width = `${size}px`;
+            dot.style.height = `${size}px`;
             
-            showScreen('gameOver');
+            // 粒子的初始位置
+            dot.style.top = `${Math.random() * 120}vh`;
+            dot.style.left = `${Math.random() * 100}vw`;
             
-            const accuracy = totalShots > 0 ? (hits / totalShots) * 100 : 0;
-            const accuracyString = accuracy.toFixed(2) + '%';
-            let avgReactionTime = 0;
-            if (reactionTimes.length > 0) {
-                const totalReactionTime = reactionTimes.reduce((a, b) => a + b, 0);
-                avgReactionTime = Math.round(totalReactionTime / reactionTimes.length);
-            }
+            // 設定動畫的水平偏移量
+            const xEnd = (Math.random() - 0.5) * 200;
+            dot.style.setProperty('--x-end', xEnd);
 
-            finalScoreEl.textContent = `你的最終分數是：${score}`;
-            finalAccuracyEl.textContent = accuracyString;
-            avgReactionTimeEl.textContent = `${avgReactionTime} ms`;
-
-            saveScore(score, accuracyString, avgReactionTime);
-
-            clearTimeout(gameOverTimeout);
-            gameOverTimeout = setTimeout(() => {
-                gameOverInputReady = true;
-            }, 1000);
-        }
-        
-        function returnToMenu() {
-            gameActive = false;
-            isPointerLocked = false;
-            clearTimeout(gameOverTimeout);
-            gameOverInputReady = false;
-            clearInterval(timerInterval);
-            if (document.pointerLockElement) document.exitPointerLock();
-            targets.forEach(target => scene.remove(target));
-            targets = [];
-            showScreen('start');
-            loadAndDisplayHighScores(); 
-        }
-
-        function handleMouseMove(event) {
-            if (!isPointerLocked) return;
-            euler.setFromQuaternion(camera.quaternion);
-            euler.y -= event.movementX * 0.002 * sensitivity; 
-            euler.x -= event.movementY * 0.002 * sensitivity;
-            euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
-            camera.quaternion.setFromEuler(euler);
-        }
-        
-        function handlePointerLockChange() {
-            if (document.pointerLockElement === canvas) {
-                isPointerLocked = true;
-                if (!gameActive) {
-                    startGame();
-                } else {
-                    showScreen('game');
-                    startTimer();
-                }
-            } else {
-                isPointerLocked = false;
-                canRequestLock = false;
-                setTimeout(() => {
-                    canRequestLock = true;
-                }, 100);
-
-                if (gameActive) {
-                    pauseGame();
-                }
-            }
-        }
-        
-        function updateSensitivityFromSlider() {
-            const baseSens = sensitivitySlider.value / 10;
-            updateAllSensitivity(baseSens);
-        }
-
-        function updateSensitivityFromInput(event) {
-            const target = event.target;
-            const game = target.dataset.game;
-            const value = parseFloat(target.textContent);
-            if (isNaN(value) || value < 0) {
-                target.textContent = (sensitivity * CONVERSION_RATES[game]).toFixed(3);
-                return;
-            }
-            const newBaseSens = value / CONVERSION_RATES[game];
-            updateAllSensitivity(newBaseSens);
-        }
-
-        function updateAllSensitivity(baseSens) {
-            sensitivity = baseSens;
-            localStorage.setItem('aimweb_sensitivity', baseSens); 
-            for (const g in sensConversionSpans) {
-                sensConversionSpans[g].textContent = (baseSens * CONVERSION_RATES[g]).toFixed(3);
-            }
-            sensitivitySlider.value = baseSens * 10;
-        }
-
-        function loadSettings() {
-            const savedSens = localStorage.getItem('aimweb_sensitivity');
-            if (savedSens !== null) {
-                updateAllSensitivity(parseFloat(savedSens));
-            } else {
-                updateSensitivityFromSlider(); 
-            }
-        }
-
-        function saveScore(newScore, accuracy, avgReactionTime) {
-            let scores = JSON.parse(localStorage.getItem('aimweb_highscores')) || [];
-            const now = new Date();
-            const dateTimeString = now.toLocaleString([], {
-                year: 'numeric', month: '2-digit', day: '2-digit',
-                hour: '2-digit', minute: '2-digit', hour12: false
-            });
-            const newEntry = { score: newScore, date: dateTimeString, accuracy: accuracy, avgReactionTime: avgReactionTime };
+            // 設定每個粒子的動畫時間和延遲，創造隨機感
+            dot.style.animationDuration = `${Math.random() * 15 + 10}s`;
+            // 減少延遲時間，讓粒子更快出現
+            dot.style.animationDelay = `${Math.random() * 1}s`; 
             
-            scores.push(newEntry);
-            scores.sort((a, b) => b.score - a.score);
-            scores = scores.slice(0, 5); 
-            
-            const isNewScoreOnBoard = scores.some(s => s.date === newEntry.date && s.score === newEntry.score);
-
-            localStorage.setItem('aimweb_highscores', JSON.stringify(scores));
-            loadAndDisplayHighScores(isNewScoreOnBoard ? newEntry : null); 
+            container.appendChild(dot);
         }
 
-        function clearHighScores() {
-            localStorage.removeItem('aimweb_highscores');
-            loadAndDisplayHighScores(); 
-        }
+        // 倒數計時器邏輯
+        const countdownElement = document.getElementById('countdown');
+        let seconds = 3;
 
-        function loadAndDisplayHighScores(newHighScore = null) {
-            const scores = JSON.parse(localStorage.getItem('aimweb_highscores')) || [];
-            const lists = [highscoreListMain, highscoreListGameOver];
-            
-            lists.forEach(list => {
-                if (!list) return;
-                list.innerHTML = ''; 
-                if (scores.length === 0) {
-                    list.innerHTML = '<li>尚無紀錄</li>';
-                } else {
-                    scores.forEach(s => {
-                        const li = document.createElement('li');
-                        // [修正] 使用正確的變數 newHighScore 來比較，而不是 newEntry
-                        if (newHighScore && s.date === newHighScore.date && s.score === newHighScore.score) {
-                            li.classList.add('new-highscore');
-                        }
-                        li.innerHTML = `
-                            <span class="score">${s.score} 分</span>
-                            <div class="details">
-                                <span class="date">${s.date}</span>
-                                <div class="stats">
-                                    <span>準確率: ${s.accuracy || 'N/A'}</span>
-                                    <span>平均時間: ${s.avgReactionTime || 'N/A'} ms</span>
-                                </div>
-                            </div>
-                        `;
-                        list.appendChild(li);
-                    });
-                }
-            });
-        }
-
-        function setupEventListeners() {
-            startButton.addEventListener('click', () => {
-                if (canRequestLock) {
-                    canvas.requestPointerLock();
-                }
-            });
-            playAgainButton.addEventListener('click', () => {
-                if (gameOverInputReady && canRequestLock) {
-                    canvas.requestPointerLock();
-                }
-            });
-            backToMenuButton.addEventListener('click', returnToMenu);
-            menuButton.addEventListener('click', returnToMenu);
-            resumeButton.addEventListener('click', resumeGame);
-            
-            const clearButtons = document.querySelectorAll('.clear-scores-btn');
-            clearButtons.forEach(button => {
-                button.addEventListener('click', (event) => {
-                    event.stopPropagation(); 
-                    clearHighScores();
-                });
-            });
-
-            sensitivitySlider.addEventListener('input', updateSensitivityFromSlider);
-
-            for (const game in sensConversionSpans) {
-                const span = sensConversionSpans[game];
-                span.addEventListener('focus', (e) => { e.target.dataset.originalValue = e.target.textContent; });
-                span.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') { e.preventDefault(); span.blur(); e.stopPropagation(); }
-                });
-                span.addEventListener('blur', (e) => {
-                    if (e.target.dataset.originalValue !== e.target.textContent) {
-                        updateSensitivityFromInput(e);
-                    }
-                });
+        const interval = setInterval(() => {
+            seconds--;
+            if (countdownElement) {
+                countdownElement.textContent = seconds;
             }
-
-            document.addEventListener('pointerlockchange', handlePointerLockChange, false);
-            document.addEventListener('mousemove', handleMouseMove, false);
-            window.addEventListener('mousedown', (event) => {
-                if (isPointerLocked && gameActive && event.button === 0) shoot();
-            });
-            window.addEventListener('resize', onWindowResize);
-
-            window.addEventListener('keydown', (event) => {
-                if (event.key === ' ') {
-                    if (screens.start.classList.contains('hidden') === false) {
-                        const activeEl = document.activeElement;
-                        if (activeEl && activeEl.isContentEditable) return; 
-                        if (canRequestLock) {
-                            canvas.requestPointerLock();
-                        }
-                    } 
-                    else if (screens.gameOver.classList.contains('hidden') === false && gameOverInputReady) {
-                        if (canRequestLock) {
-                            canvas.requestPointerLock();
-                        }
-                    }
-                }
-            });
-        }
-
-        function shoot() {
-            totalShots++;
-            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-            const intersects = raycaster.intersectObjects(targets);
-
-            if (intersects.length > 0) {
-                const hitTarget = intersects[0].object;
-                const lastHitPosition = hitTarget.position.clone(); 
-                const now = Date.now();
-                reactionTimes.push(now - lastHitTime);
-                lastHitTime = now;
-                scene.remove(hitTarget);
-                targets = targets.filter(t => t !== hitTarget);
-                score += 400;
-                hits++;
-                createTarget(lastHitPosition); 
-            } else {
-                score -= 200;
+            if (seconds <= 0) {
+                clearInterval(interval);
+                // 為了保險起見，如果 meta refresh 失效，JS 會再次嘗試導向
+                window.location.href = 'https://nonescapes.com/game/aimweb';
             }
-            updateScore();
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function updateScore() { scoreEl.textContent = `分數: ${score}`; }
-        function updateTimer() { timerEl.textContent = `時間: ${timeLeft}`; }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            renderer.render(scene, camera);
-        }
-
-        init();
+        }, 1000);
     </script>
+
 </body>
 </html>
